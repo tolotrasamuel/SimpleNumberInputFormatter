@@ -13,7 +13,6 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
     this.decimalSeparator = ".",
     this.showTrailingZeroDecimal = false,
   });
-  static List<String> nums = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
   final int decimalPlace;
   final String separator;
@@ -34,18 +33,76 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
     return double.tryParse(numStr);
   }
 
+  @Deprecated("Use [formatDouble] instead")
+
   ///  Take double for formatting
-  String? applyMask(double? number) {
-    final newValueText = number.toString();
-    List<String> twoParts = newValueText.split('.');
-    if (twoParts.length > 1 && twoParts[1] == "0") {
-      twoParts = [twoParts[0]];
-    }
-    return _applyMask(twoParts);
+  String? applyMask(double number) {
+    return NumberFormatter(this, false).formatDouble(number);
   }
 
+  ///  Take double for formatting
+  String? formatDouble(double number) {
+    return NumberFormatter(this, false).formatDouble(number);
+  }
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    print('$logTrace formatEditUpdate');
+    if (newValue.text.length == 0) {
+      return newValue.copyWith(text: '');
+    } else if (oldValue == newValue) {
+      print('$logTrace new value equal old value');
+      return oldValue;
+    } else if (newValue.text.compareTo(oldValue.text) == 0) {
+      return newValue;
+    }
+
+    final newString = NumberFormatter(this, true).formatString(newValue.text);
+    if (newString == null) {
+      return oldValue;
+    }
+
+    final commasAfter = separator.allMatches(newString).length;
+    final commasBefore = separator.allMatches(oldValue.text).length;
+    int offset = newValue.selection.end + commasAfter - commasBefore;
+
+    // handling edge case 0. from . only input
+    if (newString == "0$decimalSeparator") {
+      offset = newString.length;
+    }
+    if (newString == oldValue.text) {
+      offset = oldValue.selection.baseOffset;
+    }
+    print("$logTrace offset $offset $newString");
+    return TextEditingValue(
+      text: newString,
+      selection: TextSelection.collapsed(
+        offset: offset,
+      ),
+    );
+  }
+
+  String? formatString(String s, bool editMode) {
+    final newString = NumberFormatter(this, editMode).formatString(s);
+    return newString;
+  }
+}
+
+class NumberFormatter {
+  final SimpleNumberInputFormatter simpleNumberInputFormatter;
+  final bool editMode;
+
+  String get separator => simpleNumberInputFormatter.separator;
+  String get decimalSeparator => simpleNumberInputFormatter.decimalSeparator;
+  bool get showTrailingZeroDecimal =>
+      simpleNumberInputFormatter.showTrailingZeroDecimal;
+  int get decimalPlace => simpleNumberInputFormatter.decimalPlace;
+  NumberFormatter(this.simpleNumberInputFormatter, this.editMode);
+  static List<String> nums = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+
   /// When this returns null, it means that nothing has changed
-  String? _applyMaskInternal(String newValueText) {
+  String? formatString(String newValueText) {
     if (separator == decimalSeparator) {
       print("separator cannot be same decimalSeparator");
       return null;
@@ -117,15 +174,17 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
 
     final _integer = _getInterger(twoParts[0]);
     final _decimal = _getDecimal(twoParts.length == 2 ? twoParts[1] : "");
-
+    if (_decimal.isEmpty && editMode && twoParts.length == 2) {
+      return _integer + decimalSeparator;
+    }
     return _integer + _decimal;
   }
 
   bool _isValidInput(String stringTypedByUser) {
+    if (decimalSeparator.allMatches(stringTypedByUser).length > 1) return false;
+    final allowed = [separator, decimalSeparator, ...nums];
     for (final s in stringTypedByUser.split("")) {
-      if (!nums.contains(s) && ![separator, decimalSeparator].contains(s)) {
-        return false;
-      }
+      if (!allowed.contains(s)) return false;
     }
     return true;
   }
@@ -140,38 +199,12 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
     return [];
   }
 
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    print('$logTrace formatEditUpdate');
-    if (newValue.text.length == 0) {
-      return newValue.copyWith(text: '');
-    } else if (oldValue == newValue) {
-      print('$logTrace new value equal old value');
-      return oldValue;
-    } else if (newValue.text.compareTo(oldValue.text) == 0) {
-      return newValue;
+  String? formatDouble(double number) {
+    final newValueText = number.toString();
+    List<String> twoParts = newValueText.split('.');
+    if (twoParts.length > 1 && twoParts[1] == "0") {
+      twoParts = [twoParts[0]];
     }
-
-    final newString = _applyMaskInternal(newValue.text);
-    if (newString == null) {
-      return oldValue;
-    }
-
-    final commasAfter = separator.allMatches(newString).length;
-    final commasBefore = separator.allMatches(oldValue.text).length;
-    int offset = newValue.selection.end + commasAfter - commasBefore;
-
-    // handling edge case 0. from . only input
-    if (newString == "0$decimalSeparator") {
-      offset = newString.length;
-    }
-    print("$logTrace offset $offset $newString");
-    return TextEditingValue(
-      text: newString,
-      selection: TextSelection.collapsed(
-        offset: offset,
-      ),
-    );
+    return _applyMask(twoParts);
   }
 }

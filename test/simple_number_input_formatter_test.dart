@@ -5,6 +5,21 @@ void main() {
   test('adds one to input values', () {
     expect(
       SimpleNumberInputFormatter(showTrailingZeroDecimal: false)
+          .formatString("55", true),
+      "55",
+    );
+    expect(
+      SimpleNumberInputFormatter(showTrailingZeroDecimal: false)
+          .formatString("55.", true),
+      "55.",
+    );
+    expect(
+      SimpleNumberInputFormatter(showTrailingZeroDecimal: false)
+          .formatString("55.", false),
+      "55",
+    );
+    expect(
+      SimpleNumberInputFormatter(showTrailingZeroDecimal: false)
           .applyMask(005481.123),
       "5 481.12",
     );
