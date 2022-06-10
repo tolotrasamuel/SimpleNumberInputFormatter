@@ -125,11 +125,16 @@ class NumberFormatter {
   final bool editMode;
 
   String get separator => simpleNumberInputFormatter.separator;
+
   String get decimalSeparator => simpleNumberInputFormatter.decimalSeparator;
+
   bool get showTrailingZeroDecimal =>
       simpleNumberInputFormatter.showTrailingZeroDecimal;
+
   int get decimalPlace => simpleNumberInputFormatter.decimalPlace;
+
   NumberFormatter(this.simpleNumberInputFormatter, this.editMode);
+
   static List<String> nums = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
   /// When this returns null, it means that nothing has changed
