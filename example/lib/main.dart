@@ -47,18 +47,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  String _counter = "";
+  final formatter2 = SimpleNumberInputFormatter(
+    decimalPlace: 3,
+    separator: ".",
+    decimalSeparator: ",",
+    showTrailingZeroDecimal: true,
+  );
+  final formatter1 = SimpleNumberInputFormatter();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  void _incrementCounter() {}
 
   @override
   Widget build(BuildContext context) {
@@ -97,11 +95,6 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               'You have pushed the button this many times:',
             ),
-            TextField(
-              inputFormatters: [
-                SimpleNumberInputFormatter(),
-              ],
-            ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Form(
@@ -119,13 +112,18 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   onChanged: (s) {
                     print(s);
+                    _counter =
+                        formatter2.formatDouble(formatter1.parse(s) ?? 0) ?? "";
+                    setState(() {});
                   },
                   inputFormatters: [
-                    SimpleNumberInputFormatter(),
+                    formatter1,
                   ],
+                  textInputAction: TextInputAction.done,
                   style: TextStyle(fontSize: 35.0),
                   autofocus: true,
-                  // keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.numberWithOptions(
+                      decimal: true, signed: true),
                   // validator: (text) {
                   //   return controller.validator(text!);
                   // },
