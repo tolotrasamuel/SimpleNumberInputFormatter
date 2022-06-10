@@ -47,8 +47,11 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     print('$logTrace formatEditUpdate');
+
     if (newValue.text.length == 0) {
       return newValue.copyWith(text: '');
     } else if (oldValue == newValue) {
@@ -57,15 +60,25 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
     } else if (newValue.text.compareTo(oldValue.text) == 0) {
       return newValue;
     }
+    final newValueText = _getNewValueText(oldValue, newValue);
 
-    final newString = NumberFormatter(this, true).formatString(newValue.text);
+    final newString = NumberFormatter(this, true).formatString(newValueText);
     if (newString == null) {
       return oldValue;
     }
 
-    final commasAfter = separator.allMatches(newString).length;
-    final commasBefore = separator.allMatches(oldValue.text).length;
-    int offset = newValue.selection.end + commasAfter - commasBefore;
+    final commasAfterChange = separator.allMatches(newString).length;
+    final commasBeforeChange = separator.allMatches(oldValue.text).length;
+    final twoPartsFromNew = newValue.text.split(decimalSeparator);
+    int commasAfterDecimalSeparatorInNew = 0;
+    if (twoPartsFromNew.length == 2) {
+      commasAfterDecimalSeparatorInNew =
+          separator.allMatches(twoPartsFromNew[1]).length;
+    }
+    int offset = newValue.selection.end +
+        commasAfterChange -
+        commasBeforeChange +
+        commasAfterDecimalSeparatorInNew;
 
     // handling edge case 0. from . only input
     if (newString == "0$decimalSeparator") {
@@ -73,6 +86,9 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
     }
     if (newString == oldValue.text) {
       offset = oldValue.selection.baseOffset;
+    }
+    if (newValue.selection.end == 0) {
+      offset = 0;
     }
     print("$logTrace offset $offset $newString");
     return TextEditingValue(
@@ -86,6 +102,21 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
   String? formatString(String s, bool editMode) {
     final newString = NumberFormatter(this, editMode).formatString(s);
     return newString;
+  }
+
+  String _getNewValueText(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (oldValue.text.length < newValue.text.length) return newValue.text;
+    if (oldValue.selection.end == 0) return newValue.text;
+    final previousCharOld = oldValue.text[oldValue.selection.end - 1];
+    if (previousCharOld != separator) return newValue.text;
+    return replaceCharAt(newValue.text, newValue.selection.end - 1, "");
+  }
+
+  String replaceCharAt(String oldString, int index, String newChar) {
+    return oldString.substring(0, index) +
+        newChar +
+        oldString.substring(index + 1);
   }
 }
 
@@ -125,7 +156,7 @@ class NumberFormatter {
 //        integerChars = _removeLeadingZeros(_integerChars);
     }
 
-    if (integerChars.length == 0) {
+    if (integerChars.length == 0 && !editMode) {
       integerChars = ["0"];
     }
     print("$logTrace allChars $input integerCharss $integerChars");
