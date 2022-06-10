@@ -99,7 +99,7 @@ class SimpleNumberInputFormatter extends TextInputFormatter {
     );
   }
 
-  String? formatString(String s, bool editMode) {
+  String? formatString(String s, [bool editMode = false]) {
     final newString = NumberFormatter(this, editMode).formatString(s);
     return newString;
   }
